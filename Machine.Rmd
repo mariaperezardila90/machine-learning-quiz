@@ -1,0 +1,88 @@
+---
+title: "Machine Learning Course Project"
+author: "Alejandra Perez"
+output: html_document
+---
+
+```{r setup, echo=TRUE}
+# Set Working Directory
+setwd("C:/Users/maria/OneDrive/Escritorio/R/Hopkins/Practical machine learning")
+```
+
+# Load necessary libraries
+```{r load_libraries, echo=TRUE}
+library(caret)
+library(randomForest)
+library(ggplot2)
+```
+
+# Load data
+```{r load_data, echo=TRUE}
+training <- read.csv("pml-training.csv", na.strings=c("NA","","#DIV/0!"))
+testing <- read.csv("pml-testing.csv", na.strings=c("NA","","#DIV/0!"))
+```
+
+# Remove variables with too many missing values
+```{r clean_data, echo=TRUE}
+training <- training[, colSums(is.na(training)) == 0]
+testing <- testing[, colSums(is.na(testing)) == 0]
+```
+
+# Remove first few identifier columns
+```{r remove_identifiers, echo=TRUE}
+training <- training[, -c(1:7)]
+testing <- testing[, -c(1:7)]
+```
+
+# Convert target variable to factor
+```{r convert_target, echo=TRUE}
+training$classe <- as.factor(training$classe)
+```
+
+# Split data into training (75%) and validation (25%) sets
+```{r split_data, echo=TRUE}
+set.seed(123)
+inTrain <- createDataPartition(training$classe, p = 0.75, list = FALSE)
+trainData <- training[inTrain,]
+valData <- training[-inTrain,]
+```
+
+# Train a Random Forest model
+```{r train_model, echo=TRUE}
+set.seed(123)
+rf_model <- train(classe ~ ., data = trainData, method = "rf", 
+                  trControl = trainControl(method="cv", number=5))
+```
+
+# Print model summary
+```{r print_model, echo=TRUE}
+print(rf_model)
+```
+
+# Predict on validation set
+```{r predict_validation, echo=TRUE}
+val_preds <- predict(rf_model, valData)
+```
+
+# Evaluate model performance
+```{r evaluate_model, echo=TRUE}
+conf_matrix <- confusionMatrix(val_preds, valData$classe)
+print(conf_matrix)
+```
+
+# Predict on the test set
+```{r predict_test, echo=TRUE}
+final_preds <- predict(rf_model, testing)
+```
+
+# Save predictions for submission
+```{r save_predictions, echo=TRUE}
+write.csv(final_preds, file = "final_predictions.csv", row.names = FALSE)
+```
+
+# Print final message
+```{r final_message, echo=TRUE}
+cat("Machine Learning Project Completed!\n")
+cat("Model: Random Forest\n")
+cat("Final predictions saved as final_predictions.csv\n")
+cat("Future improvements: Consider using Gradient Boosting or Neural Networks.\n")
